@@ -4,13 +4,13 @@ public class Task {
     private Long id;
     private String title;
     private String description;
-    private String status;
+    private TaskState status;
     private String username;
 
     public Task() {
     }
 
-    public Task(Long id, String title, String description, String status, String username) {
+    public Task(Long id, String title, String description, TaskState status, String username) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -27,8 +27,8 @@ public class Task {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public TaskState getStatus() { return status; }
+    public void setStatus(TaskState status) { this.status = status; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
