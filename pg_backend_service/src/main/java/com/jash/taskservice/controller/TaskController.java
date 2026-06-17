@@ -17,6 +17,9 @@ public class TaskController {
     @PostMapping
     public Task createTask(@RequestBody Task task, Principal principal) {
         String username = principal.getName();
+        if (task.getStatus() == null) {
+            task.setStatus(TaskState.PENDING);
+        }
         task.setUsername(username);
         return taskRepository.save(task);
     }
