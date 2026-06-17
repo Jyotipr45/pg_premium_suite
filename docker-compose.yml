@@ -1,0 +1,23 @@
+﻿version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    container_name: pg_core_db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: jash_admin
+      POSTGRES_PASSWORD: super_secure_password
+      POSTGRES_DB: pg_management
+
+  mongodb:
+    image: mongo:latest
+    container_name: pg_ai_logs_db
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis:alpine
+    container_name: pg_cache_layer
+    ports:
+      - "6379:6379"
