@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -17,7 +18,6 @@ public class AutoTransitionJob extends QuartzJobBean {
 
     private final TaskRepository taskRepository;
 
-    // Direct constructor injection completely free of Lombok
     public AutoTransitionJob(TaskRepository taskRepository) {
         this.taskRepository = taskRepository;
     }
@@ -25,30 +25,33 @@ public class AutoTransitionJob extends QuartzJobBean {
     @Override
     @Transactional
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
-        System.out.println("🤖 Background Engine Triggered: Scanning overdue tasks...");
+        System.out.println("🤖 SLA Automation Engine: Auditing active PG maintenance tickets...");
 
         try {
             // Retrieve targets using our explicit pessimistic row-level lock configuration
-            List<Task> activeTasks = taskRepository.findTasksForUpdate(
+            List<Task> activeTickets = taskRepository.findTasksForUpdate(
                 Arrays.asList(TaskState.PENDING, TaskState.IN_PROGRESS)
             );
 
-            for (Task task : activeTasks) {
-                // In a production app, evaluate task.getDueDate() against the current time.
-                // For this lifecycle engine blueprint, we apply our enum transition guard rules.
-                if (task.getStatus().isValidTransition(TaskState.OVERDUE)) {
-                    task.setStatus(TaskState.OVERDUE);
-                    taskRepository.save(task);
-                    System.out.println("🎯 Task ID " + task.getId() + " automatically transitioned to OVERDUE.");
+            LocalDateTime now = LocalDateTime.now();
+
+            for (Task ticket : activeTickets) {
+                // If the maintenance ticket has surpassed its SLA due date, transition its state
+                if (ticket.getDueDate() != null && now.isAfter(ticket.getDueDate())) {
+                    if (ticket.getStatus().isValidTransition(TaskState.OVERDUE)) {
+                        ticket.setStatus(TaskState.OVERDUE);
+                        taskRepository.save(ticket);
+                        System.out.println("🎯 Maintenance Ticket ID " + ticket.getId() + 
+                                           " for Room " + ticket.getRoomNumber() + " breached SLA! Flagged as OVERDUE.");
+                    }
                 }
             }
         } catch (Exception e) {
-            System.err.println("CRITICAL: Automated job execution failure: " + e.getMessage());
+            System.err.println("CRITICAL: Maintenance SLA automation job failure: " + e.getMessage());
             throw new JobExecutionException(e);
         }
     }
 
-    // --- Native Quartz Structural Wirings (JobDetail & Trigger Definition) ---
     @Bean
     public JobDetail autoTransitionJobDetail() {
         return JobBuilder.newJob(AutoTransitionJob.class)
@@ -62,10 +65,8 @@ public class AutoTransitionJob extends QuartzJobBean {
         return TriggerBuilder.newTrigger()
                 .forJob(jobDetail)
                 .withIdentity("autoTransitionJobTrigger")
-                // Execute every hour on a recurring basis
                 .withSchedule(CronScheduleBuilder.cronSchedule("0 0 * * * ?")
                         .withMisfireHandlingInstructionFireAndProceed())
-                // Bind our holiday exclusion matrix directly to the native trigger pipeline
                 .modifiedByCalendar("customBusinessCalendar")
                 .build();
     }
