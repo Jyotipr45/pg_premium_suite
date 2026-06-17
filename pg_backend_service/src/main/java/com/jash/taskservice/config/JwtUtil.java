@@ -1,4 +1,4 @@
-﻿package com.jash.taskservice.config;
+package com.jash.taskservice.config;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

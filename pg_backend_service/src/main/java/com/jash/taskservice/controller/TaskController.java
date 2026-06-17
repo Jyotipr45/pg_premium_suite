@@ -1,3 +1,12 @@
+package com.jash.taskservice.controller;
+
+import com.jash.taskservice.domain.model.Task;
+import com.jash.taskservice.repository.TaskRepository;
+import com.jash.taskservice.domain.model.TaskState;
+import org.springframework.web.bind.annotation.*;
+import java.security.Principal;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/tasks")
 public class TaskController {
@@ -17,10 +26,10 @@ public class TaskController {
     @PostMapping
     public Task createTask(@RequestBody Task task, Principal principal) {
         String username = principal.getName();
+        task.setUsername(username);
         if (task.getStatus() == null) {
             task.setStatus(TaskState.PENDING);
         }
-        task.setUsername(username);
         return taskRepository.save(task);
     }
 }

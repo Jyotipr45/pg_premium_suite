@@ -1,3 +1,5 @@
+package com.jash.taskservice.domain.model;
+
 public enum TaskState {
     PENDING,
     IN_PROGRESS,
@@ -5,17 +7,15 @@ public enum TaskState {
     OVERDUE;
 
     public boolean isValidTransition(TaskState target) {
-        switch (this) {
-            case PENDING:
-                return target == IN_PROGRESS || target == COMPLETED || target == OVERDUE;
-            case IN_PROGRESS:
-                return target == COMPLETED || target == OVERDUE;
-            case COMPLETED:
-                return false;
-            case OVERDUE:
-                return target == COMPLETED;
-            default:
-                return false;
+        if (this == COMPLETED) {
+            return false; // Completed tasks cannot change state
         }
+        if (this == PENDING && target == OVERDUE) {
+            return true; // Automated fallback
+        }
+        if (this == IN_PROGRESS && (target == COMPLETED || target == OVERDUE)) {
+            return true;
+        }
+        return this == PENDING && target == IN_PROGRESS;
     }
 }

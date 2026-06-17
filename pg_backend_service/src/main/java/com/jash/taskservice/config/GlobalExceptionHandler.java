@@ -1,4 +1,4 @@
-﻿package com.jash.taskservice.config;
+package com.jash.taskservice.config;
 
 import com.jash.taskservice.domain.exception.BusinessRuleException;
 import org.springframework.http.HttpStatus;

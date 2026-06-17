@@ -1,4 +1,4 @@
-﻿package com.jash.taskservice.domain.model;
+package com.jash.taskservice.domain.model;
 
 public class Task {
     private Long id;

@@ -1,4 +1,4 @@
-﻿package com.jash.taskservice.domain.exception;
+package com.jash.taskservice.domain.exception;
 
 public class BusinessRuleException extends RuntimeException {
     public BusinessRuleException(String message) {

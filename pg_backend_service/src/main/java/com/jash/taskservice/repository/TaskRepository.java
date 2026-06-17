@@ -1,4 +1,4 @@
-﻿package com.jash.taskservice.repository;
+package com.jash.taskservice.repository;
 
 import com.jash.taskservice.domain.model.Task;
 import org.springframework.data.jpa.repository.JpaRepository;
