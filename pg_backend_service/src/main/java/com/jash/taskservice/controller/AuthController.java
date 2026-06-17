@@ -1,3 +1,5 @@
+package com.jash.taskservice.controller;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
