@@ -1,16 +1,16 @@
 server:
-  port: \ # Binds natively to default web server gates
+  port: ${SERVER_PORT:80}
 
 spring:
   datasource:
-    url: \ # Strictly forces an error if the environment variable is missing
-    username: \
-    password: \
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: validate # Strictly prevents Hibernate from changing tables dynamically in production
-    show-sql: false # Disables logging queries to save disk space and maximize connection execution speeds
+      ddl-auto: validate
+    show-sql: false
 
 jwt:
-  secret: \
-  expiration: \ # Extends token limits to 7 days for stable mobile app sessions
+  secret: ${JWT_SIGNING_SECRET}
+  expiration: ${JWT_EXPIRATION_MS:604800000}
