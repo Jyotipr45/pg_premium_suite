@@ -1,5 +1,7 @@
 package com.jash.taskservice.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.jash.taskservice.domain.exception.BusinessRuleException;
 import com.jash.taskservice.domain.model.*;
 import com.jash.taskservice.repository.*;
@@ -10,6 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/master")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminMasterController {
 
     private final LocationMasterRepository locationRepository;
