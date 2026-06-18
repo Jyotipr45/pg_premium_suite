@@ -1,0 +1,16 @@
+server:
+  port: \
+
+spring:
+  datasource:
+    url: \
+    username: \
+    password: \
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true # Prints out raw query syntax onto your local console for fast bug tracking
+
+jwt:
+  secret: \
+  expiration: \
