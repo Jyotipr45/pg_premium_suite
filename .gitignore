@@ -1,1 +1,36 @@
-.aider*
+# 🔒 Premium PG Suite — Master Git Ignore Blueprint
+
+# Compiled Java Classes & Build Elements
+target/
+*.class
+*.mars
+*.jar
+*.war
+*.ear
+
+# Maven Wrapper Overheads
+.mvn/
+mvnw
+mvnw.cmd
+
+# 🔒 Enterprise Product Security Isolation (CRITICAL)
+.env
+.env.local
+.env.*.local
+*.env
+.env*
+
+# Operating System Caches
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE Control Trees
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
