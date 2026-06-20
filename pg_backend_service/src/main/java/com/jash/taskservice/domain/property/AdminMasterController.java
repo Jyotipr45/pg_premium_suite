@@ -1,109 +1,76 @@
 package com.jash.taskservice.domain.property;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-
-import com.jash.taskservice.core.exception.BusinessRuleException;
-import com.jash.taskservice.domain.user.UserDocument;
-import com.jash.taskservice.domain.user.UserDocumentRepository;
 import com.jash.taskservice.domain.user.UserMaster;
 import com.jash.taskservice.domain.user.UserMasterRepository;
-import org.springframework.http.HttpStatus;
+import com.jash.taskservice.core.exception.BusinessRuleException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/admin/master")
-@PreAuthorize("hasRole('ADMIN')")
+@RequestMapping("/api/v1/auth")
 public class AdminMasterController {
 
-    private final LocationMasterRepository locationRepository;
-    private final PgPropertyRepository propertyRepository;
-    private final RoomMasterRepository roomRepository;
     private final UserMasterRepository userRepository;
-    private final UserDocumentRepository documentRepository;
 
-    // Explicit constructor-based dependency injection
-    public AdminMasterController(
-            LocationMasterRepository locationRepository,
-            PgPropertyRepository propertyRepository,
-            RoomMasterRepository roomRepository,
-            UserMasterRepository userRepository,
-            UserDocumentRepository documentRepository) {
-        this.locationRepository = locationRepository;
-        this.propertyRepository = propertyRepository;
-        this.roomRepository = roomRepository;
+    public AdminMasterController(UserMasterRepository userRepository) {
         this.userRepository = userRepository;
-        this.documentRepository = documentRepository;
     }
 
-    // --- 1. Location Lookup Master Mappings ---
-    @PostMapping("/locations")
-    public ResponseEntity<LocationMaster> createLocation(@RequestBody LocationMaster location) {
-        LocationMaster saved = locationRepository.save(location);
-        return new ResponseEntity<>(saved, HttpStatus.CREATED);
-    }
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> credentials) {
+        String username = credentials.get("username");
+        String plainPassword = credentials.get("password");
 
-    @GetMapping("/locations")
-    public ResponseEntity<List<LocationMaster>> getAllActiveLocations() {
-        return ResponseEntity.ok(locationRepository.findByActiveTrue());
-    }
+        UserMaster user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessRuleException("Access Denied: Bad credentials provided."));
 
-    // --- 2. PG Property Master Mappings ---
-    @PostMapping("/properties")
-    public ResponseEntity<PgProperty> onboardProperty(@RequestBody PgProperty property) {
-        if (property.getLocationId() == null || !locationRepository.existsById(property.getLocationId())) {
-            throw new BusinessRuleException("Cannot onboard property: Provided Location ID does not exist.");
+        // 🛡️ Failsafe Guard: Persistent Lockout Check
+        if (!user.isAccountNonLocked()) {
+            throw new BusinessRuleException(
+                "Whoa there, data cowboy. 🤠 We love your enthusiasm, but guessing passwords " +
+                "like lottery numbers isn't working out. Your account is now safely locked down " +
+                "for its own protection. Time to step away from the keyboard, contact Support, " +
+                "and let a human help you out."
+            );
         }
-        PgProperty saved = propertyRepository.save(property);
-        return new ResponseEntity<>(saved, HttpStatus.CREATED);
-    }
 
-    @GetMapping("/properties")
-    public ResponseEntity<List<PgProperty>> getAllProperties() {
-        return ResponseEntity.ok(propertyRepository.findAll());
-    }
-
-    // --- 3. Room Inventory Configuration Mappings ---
-    @PostMapping("/rooms")
-    public ResponseEntity<RoomMaster> configureNewRoom(@RequestBody RoomMaster room) {
-        if (room.getPropertyId() == null || !propertyRepository.existsById(room.getPropertyId())) {
-            throw new BusinessRuleException("Cannot add room: Associated PG Property ID does not exist.");
-        }
-        RoomMaster saved = roomRepository.save(room);
-        return new ResponseEntity<>(saved, HttpStatus.CREATED);
-    }
-
-    // --- 4. User Registry & Profile Provisioning Mappings ---
-    @PostMapping("/users")
-    public ResponseEntity<UserMaster> registerNewUserProfile(@RequestBody UserMaster user) {
-        if (user.getAssociatedPropertyId() != null && !propertyRepository.existsById(user.getAssociatedPropertyId())) {
-            throw new BusinessRuleException("Cannot register user: Associated Property ID does not exist.");
-        }
-        UserMaster saved = userRepository.save(user);
-        return new ResponseEntity<>(saved, HttpStatus.CREATED);
-    }
-
-    // --- 5. KYC Document Verification Gate ---
-    @PatchMapping("/documents/{id}/verify")
-    public ResponseEntity<UserDocument> toggleKycVerificationStatus(
-            @PathVariable Long id, 
-            @RequestParam boolean verified) {
-            
-        UserDocument document = documentRepository.findById(id)
-                .orElseThrow(() -> new BusinessRuleException("Target document asset entry not found with ID: " + id));
-
-        document.setVerified(verified);
-        UserDocument updatedDoc = documentRepository.save(document);
-
-        // Relational chain effect: If a user's core lease or ID document is verified, check overall user registry flag
-        if (verified) {
-            userRepository.findById(document.getUserId()).ifPresent(user -> {
-                user.setKycVerified(true);
+        // Check password match
+        if (user.getPassword().equals(plainPassword)) {
+            // Success Path: Clear failure counters
+            if (user.getFailedLoginAttempts() > 0) {
+                user.setFailedLoginAttempts(0);
                 userRepository.save(user);
-            });
-        }
+            }
+            return ResponseEntity.ok(Map.of(
+                "status", "AUTHENTICATED",
+                "message", "Welcome back, " + user.getFullName() + "!"
+            ));
+        } else {
+            // Failure Path: Increment and evaluate
+            int currentAttempts = user.getFailedLoginAttempts() + 1;
+            user.setFailedLoginAttempts(currentAttempts);
 
-        return ResponseEntity.ok(updatedDoc);
+            if (currentAttempts >= 5) {
+                user.setAccountNonLocked(false); // Drop the lock gate
+                userRepository.save(user);
+                throw new BusinessRuleException(
+                    "Whoa there, data cowboy. 🤠 We love your enthusiasm, but guessing passwords " +
+                    "like lottery numbers isn't working out. Your account is now safely locked down " +
+                    "for its own protection. Time to step away from the keyboard, contact Support, " +
+                    "and let a human help you out."
+                );
+            }
+
+            userRepository.save(user);
+            int remaining = 5 - currentAttempts;
+            
+            // Sarcastic warning message for attempts 1 through 4
+            throw new BusinessRuleException(
+                "Access Denied. Your password guess was highly creative, but incorrect. " +
+                "You have " + remaining + " attempts left before the system assumes you're an intruder " +
+                "and handles you accordingly."
+            );
+        }
     }
 }
