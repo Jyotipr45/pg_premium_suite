@@ -2,65 +2,40 @@ package com.jash.taskservice.domain.task;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import com.jash.taskservice.core.exception.BusinessRuleException;
-
-import java.security.Principal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/tasks")
 public class TaskController {
 
-    private final TaskRepository taskRepository;
+    private final TaskService taskService;
 
-    public TaskController(TaskRepository taskRepository) {
-        this.taskRepository = taskRepository;
+    public TaskController(TaskService taskService) {
+        this.taskService = taskService;
     }
 
-    // 1. Create a New Maintenance Ticket (Bounded to authenticated Resident JWT)
+    // 🛡️ TENANT ONLY - File an issue
     @PostMapping
-    public ResponseEntity<Task> createTicket(@RequestBody Task incomingPayload, Principal principal) {
-        Task ticket = new Task();
-        ticket.setUsername(principal.getName()); // Extracted securely from token context
-        ticket.setTitle(incomingPayload.getTitle());
-        ticket.setDescription(incomingPayload.getDescription());
-        ticket.setRoomNumber(incomingPayload.getRoomNumber());
-        ticket.setStatus(TaskState.PENDING);
-        
-        // Default SLA: 24 hours from now to resolve the issue
-        ticket.setDueDate(LocalDateTime.now().plusHours(24));
-
-        Task savedTicket = taskRepository.save(ticket);
-        return new ResponseEntity<>(savedTicket, HttpStatus.CREATED);
+    @PreAuthorize("hasRole('TENANT')")
+    public ResponseEntity<Task> createTicket(@RequestBody Task task) {
+        Task createdTask = taskService.createTicket(task);
+        return new ResponseEntity<>(createdTask, HttpStatus.CREATED);
     }
 
-    // 2. Retrieve All Maintenance Tickets belonging exclusively to the logged-in resident
+    // 👥 ADMIN & OWNER ONLY - Track operational boards
     @GetMapping
-    public ResponseEntity<List<Task>> getMyTickets(Principal principal) {
-        List<Task> tickets = taskRepository.findByUsername(principal.getName());
-        return ResponseEntity.ok(tickets);
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    public ResponseEntity<List<Task>> getAllTasks() {
+        return ResponseEntity.ok(taskService.getAllTasks());
     }
 
-    // 3. Update Ticket Status (Technician assigns to IN_PROGRESS or marks COMPLETED)
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<Task> updateTicketStatus(
-            @PathVariable Long id,
-            @RequestParam TaskState targetStatus,
-            Principal principal) {
-            
-        Task ticket = taskRepository.findById(id)
-                .orElseThrow(() -> new BusinessRuleException("Maintenance ticket not found with ID: " + id));
-
-        // State Machine Guard Verification Pass
-        if (!ticket.getStatus().isValidTransition(targetStatus)) {
-            throw new BusinessRuleException("Invalid status transition from " + ticket.getStatus() + " to " + targetStatus);
-        }
-
-        ticket.setStatus(targetStatus);
-        Task updatedTicket = taskRepository.save(ticket);
-        return ResponseEntity.ok(updatedTicket);
+    // 🛡️ ADMIN & OWNER ONLY - Advance the state lifecycle
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    public ResponseEntity<Task> updateTaskStatus(@PathVariable Long id, @RequestParam TaskState targetState) {
+        Task updatedTask = taskService.transitionTaskState(id, targetState);
+        return ResponseEntity.ok(updatedTask);
     }
 }
