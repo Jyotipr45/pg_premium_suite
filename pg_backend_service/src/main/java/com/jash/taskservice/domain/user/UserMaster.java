@@ -6,22 +6,22 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "user_masters")
 public class UserMaster {
-    @jakarta.persistence.Column(name = "refresh_token", length = 500)
-    private String refreshToken;
-
-    @jakarta.persistence.Column(name = "refresh_token_expiry")
-    private java.time.LocalDateTime refreshTokenExpiry;
-
-    @jakarta.persistence.Column(name = "password")
-    private String password;
-
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String username;       // Maps back to our JWT token Principal identity
+    private String username;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(name = "refresh_token", length = 500)
+    private String refreshToken;
+
+    @Column(name = "refresh_token_expiry")
+    private LocalDateTime refreshTokenExpiry;
 
     @Column(nullable = false)
     private String fullName;
@@ -30,25 +30,44 @@ public class UserMaster {
     private String phoneNumber;
 
     private String emergencyContact;
-    private String userRole;       // e.g., "ADMIN", "CARETAKER", "TENANT", "COOK"
-    
-    private Long associatedPropertyId; // Links staff/tenants directly to a PgProperty.id
-    private Long assignedRoomId;       // Nullable (Staff don't occupy rooms, residents do)
-    
+    private String userRole; // e.g., "ADMIN", "CARETAKER", "TENANT", "COOK"
+
+    private Long associatedPropertyId;
+    private Long assignedRoomId;
+
     private boolean kycVerified;
+
+    // 🛡️ Lockout Tracking Engine Attributes
+    @Column(nullable = false)
+    private int failedLoginAttempts = 0;
+
+    @Column(nullable = false)
+    private boolean accountNonLocked = true;
+
     private LocalDateTime createdAt;
 
     public UserMaster() {
         this.kycVerified = false;
+        this.accountNonLocked = true;
+        this.failedLoginAttempts = 0;
         this.createdAt = LocalDateTime.now();
     }
 
-    // Standard Explicit Getters and Setters (Lombok-Free Compliance)
+    // Explicit Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+
+    public String getRefreshToken() { return refreshToken; }
+    public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
+
+    public LocalDateTime getRefreshTokenExpiry() { return refreshTokenExpiry; }
+    public void setRefreshTokenExpiry(LocalDateTime refreshTokenExpiry) { this.refreshTokenExpiry = refreshTokenExpiry; }
 
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
@@ -71,18 +90,12 @@ public class UserMaster {
     public boolean isKycVerified() { return kycVerified; }
     public void setKycVerified(boolean kycVerified) { this.kycVerified = kycVerified; }
 
+    public int getFailedLoginAttempts() { return failedLoginAttempts; }
+    public void setFailedLoginAttempts(int failedLoginAttempts) { this.failedLoginAttempts = failedLoginAttempts; }
+
+    public boolean isAccountNonLocked() { return accountNonLocked; }
+    public void setAccountNonLocked(boolean accountNonLocked) { this.accountNonLocked = accountNonLocked; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    public String getPassword() {
-        return this.password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-    public String getRefreshToken() { return this.refreshToken; }
-    public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
-    public java.time.LocalDateTime getRefreshTokenExpiry() { return this.refreshTokenExpiry; }
-    public void setRefreshTokenExpiry(java.time.LocalDateTime refreshTokenExpiry) { this.refreshTokenExpiry = refreshTokenExpiry; }
 }
