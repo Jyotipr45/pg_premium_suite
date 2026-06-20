@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import java.io.PrintWriter;
@@ -37,6 +38,19 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
+    // 🛡️ Explicit Rule Guard for Spring Security Role Failures
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDeniedException(AccessDeniedException ex) {
+        logger.warn("🔒 Security Interception: Role validation failed context: {}", ex.getMessage());
+        saveDeveloperAuditLog(HttpStatus.FORBIDDEN.value(), ex);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", HttpStatus.FORBIDDEN.value());
+        body.put("error", "Forbidden Access");
+        body.put("message", "Access Denied: Your profile does not possess the required credentials to process this business domain entry.");
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
         logger.error("💥 Unhandled runtime system exception caught: ", ex);
@@ -52,7 +66,7 @@ public class GlobalExceptionHandler {
     private void saveDeveloperAuditLog(int status, Exception ex) {
         try {
             DeveloperAuditLog auditLog = new DeveloperAuditLog();
-            
+
             auditLog.setClientIp(MDC.get("clientIp"));
             auditLog.setRequestUrl(MDC.get("requestUrl"));
             auditLog.setHttpMethod(MDC.get("httpMethod"));
