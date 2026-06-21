@@ -29,6 +29,9 @@ public class UserMaster {
     @Column(nullable = false, unique = true)
     private String phoneNumber;
 
+    @Column(name = "email", unique = true)
+    private String email;
+
     private String emergencyContact;
     private String userRole; // e.g., "ADMIN", "CARETAKER", "TENANT", "COOK"
 
@@ -37,7 +40,6 @@ public class UserMaster {
 
     private boolean kycVerified;
 
-    // 🛡️ Lockout Tracking Engine Attributes
     @Column(nullable = false)
     private int failedLoginAttempts = 0;
 
@@ -46,6 +48,13 @@ public class UserMaster {
 
     private LocalDateTime createdAt;
 
+    // 📧 Password recovery context tracking definitions
+    @Column(name = "reset_token")
+    private String resetToken;
+
+    @Column(name = "reset_token_expiry")
+    private java.time.LocalDateTime resetTokenExpiry;
+
     public UserMaster() {
         this.kycVerified = false;
         this.accountNonLocked = true;
@@ -53,7 +62,7 @@ public class UserMaster {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Explicit Getters and Setters
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -74,6 +83,9 @@ public class UserMaster {
 
     public String getPhoneNumber() { return phoneNumber; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
     public String getEmergencyContact() { return emergencyContact; }
     public void setEmergencyContact(String emergencyContact) { this.emergencyContact = emergencyContact; }
@@ -98,4 +110,10 @@ public class UserMaster {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public String getResetToken() { return resetToken; }
+    public void setResetToken(String resetToken) { this.resetToken = resetToken; }
+
+    public java.time.LocalDateTime getResetTokenExpiry() { return resetTokenExpiry; }
+    public void setResetTokenExpiry(java.time.LocalDateTime resetTokenExpiry) { this.resetTokenExpiry = resetTokenExpiry; }
 }

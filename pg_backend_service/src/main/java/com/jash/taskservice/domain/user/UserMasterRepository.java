@@ -14,4 +14,8 @@ public interface UserMasterRepository extends JpaRepository<UserMaster, Long> {
 
     boolean existsByUsername(String username);
 
+
+    java.util.Optional<UserMaster> findByResetToken(String resetToken);
+
+    java.util.Optional<UserMaster> findByEmail(String email);
 }

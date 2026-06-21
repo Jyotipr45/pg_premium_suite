@@ -1,23 +1,21 @@
-server:
-  port: ${SERVER_PORT:8080}
-
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/pg_premium_db}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:Godspeed}
+    url: jdbc:postgresql://localhost:5432/pg_premium_db
+    username: postgres
+    password: Godspeed
+    driver-class-name: org.postgresql.Driver
+  
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
 
-# Custom property mapping bindings for the runtime environment data seeder engine
-app:
-  seed:
-    username: ${SEED_DEMO_USERNAME:postgres}
-    password: ${SEED_DEMO_PASSWORD:postgres}
-    fullname: ${SEED_DEMO_FULLNAME:Demo User}
-
-jwt:
-  secret: ${JWT_SIGNING_SECRET:fallback_default_secret_key_for_local_compilation_passes_404E63}
-  expiration: ${JWT_EXPIRATION_MS:86400000}
+  mail:
+    host: localhost
+    port: 1025
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
